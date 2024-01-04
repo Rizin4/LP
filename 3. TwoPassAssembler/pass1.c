@@ -2,45 +2,49 @@
 #include <string.h>
 #include <stdlib.h>
 
+// Global variables
 char opcode[20], operand[20], label[20], t1[20], t2[20], t3[20];
 int locctr, start, len, s = -1, i, j = 0, flag, size = 0, opd;
-FILE *fp1, *fp2, *fp3, *fp4, *fp5;
+FILE *input, *optab, *symtab, *output, *length;
 
-
+// Symbol Table structure
 struct SYMTAB
 {
     char label[20];
     int addr;
 } ST[30];
 
+// Opcode Table structure
 struct OPTAB
 {
     char opcode[20], hexcode[20];
 } OT[30];
 
+// Function to read Opcode Table from file
 void read_OPTAB()
 {
     int o = 0;
-    while (fscanf(fp2, "%s%s", OT[o].opcode, OT[o].hexcode) != EOF && o < 30)
+    while (fscanf(optab, "%s%s", OT[o].opcode, OT[o].hexcode) != EOF && o < 30)
     {
         o++;
     }
 }
 
+// Function to read a line from the input file
 void read_Line()
 {
     strcpy(t1, "");
     strcpy(t2, "");
     strcpy(t3, "");
-    if (fscanf(fp1, "%s", t1) != EOF)
+    if (fscanf(input, "%s", t1) != EOF)
     {
-        if (fgetc(fp1) != '\n')
+        if (fgetc(input) != '\n')
         {
-            if (fscanf(fp1, "%s", t2) != EOF)
+            if (fscanf(input, "%s", t2) != EOF)
             {
-                if (fgetc(fp1) != '\n')
+                if (fgetc(input) != '\n')
                 {
-                    fscanf(fp1, "%s", t3);
+                    fscanf(input, "%s", t3);
                 }
             }
         }
@@ -65,22 +69,27 @@ void read_Line()
     }
 }
 
+// Main function
 int main()
 {
-    fp1 = fopen("input.txt", "r");
-    fp2 = fopen("optab.txt", "r");
-    fp3 = fopen("symtab.txt", "w");
-    fp4 = fopen("output1.txt", "w");
-    fp5 = fopen("length.txt", "w");
+    // File pointers for input, opcode table, symbol table, intermediate code, and length
+    input = fopen("input.txt", "r");
+    optab = fopen("optab.txt", "r");
+    symtab = fopen("symtab.txt", "w");
+    output = fopen("output1.txt", "w");
+    length = fopen("length.txt", "w");
+    
+    // Read Opcode Table
     read_OPTAB();
 
-    if (fscanf(fp1, "%s %s %x", label, opcode, &opd) != EOF && strcmp(opcode, "START") == 0)
+    // Read the first line of the input file
+    if (fscanf(input, "%s %s %x", label, opcode, &opd) != EOF && strcmp(opcode, "START") == 0)
     {
         start = opd;
         locctr = start;
-        fprintf(fp4, "\t%s\t%s\t%x\n", label, opcode, opd);
-		printf("----------------------INTERMEDIATE CODE----------------------------------\n");
-		printf("\t%s\t%s\t%x\n", label, opcode, opd);
+        fprintf(output, "\t%s\t%s\t%x\n", label, opcode, opd);
+        printf("----------------------INTERMEDIATE CODE----------------------------------\n");
+        printf("\t%s\t%s\t%x\n", label, opcode, opd);
         read_Line();
     }
     else
@@ -88,10 +97,13 @@ int main()
         locctr = 0;
     }
 
+    // Process the input file until END is encountered
     while (strcmp(opcode, "END") != 0)
     {
-        fprintf(fp4, "%x\t%s\t%s\t%s\n", locctr, label, opcode, operand);
-		printf("%x\t%s\t%s\t%s\n", locctr, label, opcode, operand);
+        fprintf(output, "%x\t%s\t%s\t%s\n", locctr, label, opcode, operand);
+        printf("%x\t%s\t%s\t%s\n", locctr, label, opcode, operand);
+        
+        // Handle labels and update Symbol Table
         if (strcmp(label, "") != 0)
         {
             for (i = 0; i <= s; i++)
@@ -106,6 +118,8 @@ int main()
             strcpy(ST[s].label, label);
             ST[s].addr = locctr;
         }
+        
+        // Check if the opcode is present in the Opcode Table
         flag = 0;
         for (i = 0; i <= 30; i++)
         {
@@ -117,6 +131,8 @@ int main()
                 break;
             }
         }
+        
+        // If opcode is not in Opcode Table, handle special cases
         if (flag == 0)
         {
             if (strcmp(opcode, "WORD") == 0)
@@ -141,28 +157,38 @@ int main()
                 size += len;
             }
         }
+        
+        // Read the next line
         read_Line();
     }
-    fprintf(fp4, "%x\t%s\t%s\t%s\n", locctr,label, opcode, operand);
-	printf("%x\t%s\t%s\t%s\n", locctr,label, opcode, operand);
-	printf("The length of program:%x", locctr - start);
-	printf("\n ----------------------SYMBOL TAB----------------------------------\n");
+    
+    // Print the last line
+    fprintf(output, "%x\t%s\t%s\t%s\n", locctr, label, opcode, operand);
+    printf("%x\t%s\t%s\t%s\n", locctr, label, opcode, operand);
+    printf("The length of program:%x", locctr - start);
+    
+    // Print the Symbol Table
+    printf("\n ----------------------SYMBOL TAB----------------------------------\n");
     for (i = 0; i <= s; i++)
     {
-        fprintf(fp3, "%s\t%x", ST[i].label, ST[i].addr);
-		printf("%s\t%x", ST[i].label, ST[i].addr);
+        fprintf(symtab, "%s\t%x", ST[i].label, ST[i].addr);
+        printf("%s\t%x", ST[i].label, ST[i].addr);
         if (i != s)
-            fprintf(fp3, "\n");
-			printf("\n");
+            fprintf(symtab, "\n");
+        printf("\n");
     }
-	
     
-	fprintf(fp5, "%x\n%x", locctr - start, size);
-    fclose(fp1);
-    fclose(fp2);
-    fclose(fp3);
-    fclose(fp4);
-    fclose(fp5);
-	printf("");
+    // Print the length to the length file
+    fprintf(length, "%x\n%x", locctr - start, size);
+    
+    // Close file pointers
+    fclose(input);
+    fclose(optab);
+    fclose(symtab);
+    fclose(output);
+    fclose(length);
+    
+    // Return 0 to indicate successful execution
+    printf("");
     return 0;
 }
