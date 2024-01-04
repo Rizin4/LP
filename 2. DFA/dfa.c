@@ -1,72 +1,50 @@
 #include <stdio.h>
+#include <stdbool.h>
 #include <string.h>
 
-int dfa = 0;
-void state0(char c)
-{
-    if (c == '1')
-        dfa = 1;
-    else if (c == '0')
-        dfa = 3;
-    else
-        dfa = -1;
+// Define the DFA transitions and accepting state
+#define NUM_STATES 4
+#define NUM_SYMBOLS 2
+
+int transitionTable[NUM_STATES][NUM_SYMBOLS] = {
+// State Q0 State Q1 State Q2 State Q3
+{3, 1}, // Transition for symbol '0' (from Q0)
+{0, 2}, // Transition for symbol '1' (from Q0)
+{1, 3}, // Transition for symbol '0' (from Q1)
+{2, 0} // Transition for symbol '1' (from Q1)
+};
+
+int acceptingState = 0; // Accepting state is Q0
+
+// Function to simulate the DFA
+bool runDFA(const char* input) {
+int currentState = 0; // Start from the initial state (Q0)
+
+for (size_t i = 0; i < strlen(input); i++) {
+char symbol = input[i];
+int symbolIndex = symbol - '0'; // Convert character '0' or '1' to index 0 or 1
+
+if (symbolIndex < 0 || symbolIndex >= NUM_SYMBOLS) {
+// Invalid input symbol
+return false;
 }
-void state1(char c)
-{
-    if (c == '0')
-        dfa = 2;
-    else if (c == '1')
-        dfa = 0;
-    else
-        dfa = -1;
+
+currentState = transitionTable[currentState][symbolIndex];
 }
-void state2(char c)
-{
-    if (c == '1')
-        dfa = 3;
-    else if (c == '0')
-        dfa = 1;
-    else
-        dfa = -1;
+
+return currentState == acceptingState; // Check if the final state is the accepting state
 }
-void state3(char c)
-{
-    if (c == '0')
-        dfa = 0;
-    else if (c == '1')
-        dfa = 2;
-    else
-        dfa = -1;
+
+int main() {
+char input[100];
+printf("Enter a string (0s and 1s): ");
+scanf("%s", input);
+
+if (runDFA(input)) {
+printf("Accepted\n");
+} else {
+printf("Not Accepted\n");
 }
-int isAccepted(char str[])
-{
-    int i, len = strlen(str);
-    for (i = 0; i < len; i++)
-    {
-        if (dfa == 0)
-            state0(str[i]);
-        else if (dfa == 1)
-            state1(str[i]);
-        else if (dfa == 2)
-            state2(str[i]);
-        else if (dfa == 3)
-            state3(str[i]);
-        else
-            return 0;
-    }
-    if (dfa == 0)
-        return 1;
-    else
-        return 0;
-}
-int main()
-{
-    char str[1000];
-    printf("enter string:");
-    scanf("%s", str);
-    if (isAccepted(str))
-        printf("accepted");
-    else
-        printf("not accepted");
-    return 0;
+
+return 0;
 }
